@@ -23,7 +23,7 @@
   "bugs": {
     "url": "https://github.com/uzziclub/RanzoAI/issues"
   },
-  "homepage": "https://github.com/uzziclub/RanzoAI#readme",
+  "homepage": "https://github.com/uzziclub/RanzoAI",
   "devDependencies": {
     "@types/node": "^26.2.0",
     "@types/react": "^19.2.18",
@@ -48,7 +48,8 @@
     "files": [
       "dist/**/*",
       "dist-electron/**/*",
-      "resources/icon-256.png"
+      "resources/icon-256.png",
+      "LICENSE.txt"
     ],
     "extraResources": [
       {
@@ -65,7 +66,9 @@
           ]
         }
       ],
-      "icon": "resources/icon.ico"
+      "icon": "resources/icon.ico",
+      "publisherName": "Uzzi Club",
+      "legalTrademarks": "Ranzo AI — Uzzi Club"
     },
     "nsis": {
       "oneClick": false,
@@ -74,7 +77,9 @@
       "createStartMenuShortcut": true,
       "shortcutName": "Ranzo AI",
       "uninstallDisplayName": "Ranzo AI",
-      "artifactName": "Ranzo-AI-Setup-${version}.exe"
+      "artifactName": "Ranzo-AI-Setup-${version}.exe",
+      "license": "LICENSE.txt",
+      "deleteAppDataOnUninstall": false
     }
   }
 }

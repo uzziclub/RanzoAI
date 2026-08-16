@@ -51,7 +51,9 @@ Everything listed as **working** actually works — nothing is a mockup. Anythin
 | Battery awareness — copilot skips background work on battery | ✅ Working |
 | Quick Capture — global hotkey Ctrl+Shift+Space, tiny always-on-top box, filed into memory with timestamp | ✅ Working |
 | Offline RAG — point Ranzo at folders, ask questions about your own files; auto-reindexes as files change | ✅ Working (Settings → Memory → Your documents) |
-| Windows NSIS installer packaging + uninstaller | ✅ Configured (built by CI on Windows — see Packaging) |
+| Windows NSIS installer packaging + uninstaller + EULA screen | ✅ Configured (built by CI on Windows — see PUBLISHING.md) |
+| Tagged-release pipeline: push `v*` tag → tested build → GitHub Release with installer attached | ✅ Configured |
+| Production crash guards (main-process handlers + renderer error boundary, no white screens) | ✅ Working |
 
 ### Not yet built (planned, honestly not in this build)
 
@@ -79,6 +81,10 @@ npm start            # build then launch the real Electron app
 ```
 
 The browser preview clearly labels itself and never fakes system work — voice, engine, and PC control activate in the installed desktop app.
+
+## Releasing / publishing
+
+See **[PUBLISHING.md](PUBLISHING.md)** for the full path from repo to public download: enabling CI, tagging `v1.0.0`, the auto-created GitHub Release with the installer attached, code-signing notes, and the pre-ship checklist. The installer shows the plain-language EULA in `LICENSE.txt` during setup.
 
 ## Packaging the Windows installer
 

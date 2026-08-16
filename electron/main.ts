@@ -381,6 +381,18 @@ function watchClipboard() {
 
 // ---------- lifecycle ----------
 
+// Production crash guards: an unexpected error must never take the tray/copilot
+// down silently. Log it, tell the user once through the broker, keep running.
+process.on("uncaughtException", (err) => {
+  try {
+    log("error", "app", `Uncaught exception: ${err.stack ?? String(err)}`);
+    notify("Something went wrong in the background", "Ranzo hit an internal error but recovered. If anything looks stuck, restart from the tray menu.", "error", { native: false });
+  } catch { /* logging must never crash the crash handler */ }
+});
+process.on("unhandledRejection", (reason) => {
+  try { log("error", "app", `Unhandled rejection: ${String(reason)}`); } catch { /* ignore */ }
+});
+
 const gotLock = app.requestSingleInstanceLock();
 if (!gotLock) {
   app.quit();

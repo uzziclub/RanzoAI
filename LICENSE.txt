@@ -1,0 +1,43 @@
+RANZO AI — END USER LICENSE AGREEMENT
+
+Copyright (c) 2026 Uzzi Club. All rights reserved.
+
+This is a plain-language license. By installing or using Ranzo AI you agree to it.
+
+1. WHAT YOU MAY DO
+   - Install and use Ranzo AI on Windows computers you own or control.
+   - Use it for personal or commercial work.
+
+2. WHAT YOU MAY NOT DO
+   - Resell, rent, sublicense, or redistribute Ranzo AI or modified copies of it.
+   - Reverse engineer it, except where the law explicitly allows.
+   - Remove or alter its branding or this notice.
+
+3. ACCOUNTS
+   - Access requires an account. Uzzi Club may grant, revoke, or block accounts
+     at its discretion for commercial or abuse reasons.
+
+4. PRIVACY
+   - Ranzo AI is local-first. It does not upload your files, screenshots,
+     clipboard, voice, or conversations. There is no telemetry endpoint in the
+     product. Optional cloud features (fallback AI providers, license checks)
+     only run when configured and only send what those features need.
+
+5. THIRD-PARTY COMPONENTS
+   - Ranzo AI includes open-source components under their own licenses
+     (Electron, React, and others) and can connect to third-party services
+     (Ollama, Microsoft Edge TTS voices, free AI provider tiers). Those
+     services have their own terms.
+
+6. NO WARRANTY
+   - Ranzo AI is provided "as is", without warranty of any kind. Uzzi Club is
+     not liable for damages arising from its use, to the maximum extent
+     permitted by law. Ranzo AI can operate your computer on your instruction;
+     you are responsible for the instructions you give and the confirmations
+     you approve.
+
+7. TERMINATION
+   - This license ends automatically if you break its terms. Sections 4-6
+     survive termination.
+
+Contact: Uzzi Club — mr304e@gmail.com
