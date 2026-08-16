@@ -120,3 +120,13 @@ Then put the project URL and anon key into **Settings → AI Providers → Licen
 - Auto-memory refuses anything that looks like a password, key, or card number.
 - Destructive actions always confirm in plain language; that switch cannot be turned off.
 - API keys live in your local settings DB, never hard-coded.
+
+## CI note
+
+GitHub blocked this session from pushing files into `.github/workflows/`, so the Windows-installer workflow lives at `ci/build-windows.yml`. To enable automatic installer builds, move it once:
+
+```bash
+mkdir -p .github/workflows
+git mv ci/build-windows.yml .github/workflows/build-windows.yml
+git commit -m "Enable Windows installer CI" && git push
+```
