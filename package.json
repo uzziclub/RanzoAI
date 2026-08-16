@@ -1,0 +1,85 @@
+{
+  "name": "ranzo-ai",
+  "version": "1.0.0",
+  "description": "Ranzo AI — free, offline-first, local-first Windows desktop assistant by Uzzi Club",
+  "main": "dist-electron/main.js",
+  "scripts": {
+    "dev": "vite",
+    "build:renderer": "vite build",
+    "build:electron": "node scripts/build-electron.mjs",
+    "build": "npm run build:renderer && npm run build:electron",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "start": "npm run build && electron .",
+    "dist:win": "npm run build && electron-builder --win nsis",
+    "test": "node scripts/test-router.mjs && node scripts/test-auth.mjs && node scripts/test-voices.mjs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/uzziclub/RanzoAI.git"
+  },
+  "keywords": [],
+  "author": "Uzzi Club",
+  "license": "UNLICENSED",
+  "bugs": {
+    "url": "https://github.com/uzziclub/RanzoAI/issues"
+  },
+  "homepage": "https://github.com/uzziclub/RanzoAI",
+  "devDependencies": {
+    "@types/node": "^26.2.0",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.4",
+    "@vitejs/plugin-react": "^4.7.0",
+    "electron": "^37.10.3",
+    "electron-builder": "^25.1.8",
+    "esbuild": "^0.24.2",
+    "msedge-tts": "^2.0.7",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "typescript": "^5.9.3",
+    "vite": "^5.4.21"
+  },
+  "build": {
+    "appId": "club.uzzi.ranzoai",
+    "productName": "Ranzo AI",
+    "copyright": "Copyright © 2026 Uzzi Club",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "dist-electron/**/*",
+      "resources/icon-256.png",
+      "LICENSE.txt"
+    ],
+    "extraResources": [
+      {
+        "from": "resources",
+        "to": "resources"
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "resources/icon.ico",
+      "publisherName": "Uzzi Club",
+      "legalTrademarks": "Ranzo AI — Uzzi Club"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Ranzo AI",
+      "uninstallDisplayName": "Ranzo AI",
+      "artifactName": "Ranzo-AI-Setup-${version}.exe",
+      "license": "LICENSE.txt",
+      "deleteAppDataOnUninstall": false
+    }
+  }
+}
