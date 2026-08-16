@@ -29,7 +29,12 @@ await build({
   alias: { electron: stub }, logLevel: "silent",
 });
 
-const m = await import(pathToFileURL(outfile).href);let pass = 0, fail = 0;
+const m = await import(pathToFileURL(outfile).href);
+const dir = mkdtempSync(join(tmpdir(), "ranzo-test-"));
+m.initLogger(dir);
+m.initDb(dir);
+
+let pass = 0, fail = 0;
 function expect(name, actual, wanted) {
   if (actual === wanted) { pass++; }
   else { fail++; console.error(`FAIL ${name}: got "${actual}", wanted "${wanted}"`); }
