@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { ranzo } from "../bridge";
 import type { AppSettings, DiagnosticsInfo, KnowledgeStatus } from "../../shared/types";
+import { VoicePicker } from "../components/VoicePicker";
 
 const TABS = ["Voice", "Language", "AI Providers", "Memory", "Permissions", "Performance", "Privacy", "Notifications", "Shortcuts", "Advanced & Diagnostics"] as const;
 type Tab = (typeof TABS)[number];
@@ -49,18 +50,8 @@ export function SettingsModal({ onClose, onSpeakRepliesChange }: { onClose: () =
 
         {tab === "Voice" && (
           <div className="stack">
-            <div>
-              <label className="field-label">Voice</label>
-              <select className="clay-input" value={s.ttsVoice} onChange={(e) => void patch({ ttsVoice: e.target.value })}>
-                <option value="en-US-GuyNeural">Guy — natural male (English)</option>
-                <option value="en-US-JennyNeural">Jenny — natural female (English)</option>
-                <option value="en-GB-RyanNeural">Ryan — British male</option>
-                <option value="ur-PK-AsadNeural">Asad — Urdu</option>
-                <option value="ar-SA-HamedNeural">Hamed — Arabic</option>
-                <option value="hi-IN-MadhurNeural">Madhur — Hindi</option>
-              </select>
-              <p className="small muted" style={{ marginTop: 4 }}>Edge-TTS voices are free. When the internet is down, spoken replies pause but text keeps working.</p>
-            </div>
+            <VoicePicker value={s.ttsVoice} onChange={(id) => void patch({ ttsVoice: id })} />
+            <p className="small muted">These voices are free. When the internet is down, spoken replies pause but text keeps working.</p>
             <div>
               <label className="field-label">Speed: {s.ttsRate.toFixed(2)}×</label>
               <input type="range" min={0.5} max={2} step={0.05} value={s.ttsRate} onChange={(e) => void patch({ ttsRate: Number(e.target.value) })} style={{ width: "100%" }} />

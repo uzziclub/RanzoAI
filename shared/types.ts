@@ -232,6 +232,7 @@ export interface RanzoBridge {
   exportDiagnostics(): Promise<{ ok: boolean; path?: string; error?: string }>;
   // voice
   speak(text: string): Promise<{ ok: boolean; audioBase64?: string; error?: string }>;
+  previewVoice(voiceId: string): Promise<{ ok: boolean; audioBase64?: string; error?: string }>;
   stopSpeaking(): Promise<void>;
   // notifications
   listNotifications(): Promise<AppNotification[]>;
@@ -254,7 +255,7 @@ export interface RanzoBridge {
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
-  ttsVoice: "en-US-GuyNeural",
+  ttsVoice: "en-US-AndrewMultilingualNeural",
   ttsRate: 1,
   ttsPitch: 0,
   whisperMode: false,

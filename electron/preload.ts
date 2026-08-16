@@ -45,6 +45,7 @@ contextBridge.exposeInMainWorld("ranzo", {
   exportDiagnostics: () => invoke("system:export-diagnostics"),
   // voice
   speak: (text: string) => invoke("voice:speak", text),
+  previewVoice: (voiceId: string) => invoke("voice:preview", voiceId),
   stopSpeaking: () => invoke("voice:stop"),
   // notifications
   listNotifications: () => invoke("notify:list"),

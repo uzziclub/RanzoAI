@@ -11,7 +11,7 @@
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "start": "npm run build && electron .",
     "dist:win": "npm run build && electron-builder --win nsis",
-    "test": "node scripts/test-router.mjs && node scripts/test-auth.mjs"
+    "test": "node scripts/test-router.mjs && node scripts/test-auth.mjs && node scripts/test-voices.mjs"
   },
   "repository": {
     "type": "git",

@@ -30,7 +30,8 @@ Everything listed as **working** actually works — nothing is a mockup. Anythin
 | System control with safety tiers + plain-language confirmation + undo stack | ✅ Working on Windows (volume, open apps, lock, sleep, shutdown/restart, delete-to-recycle-bin, move, screenshots, clipboard, file listing, arbitrary confirmed commands) |
 | Safe zones (folders that always require confirmation) | ✅ Working |
 | Clipboard memory (rolling 20 items, local) | ✅ Working (“what did I copy before this?”) |
-| TTS: Edge-TTS (free) with rate/pitch/whisper mode, auto voice per language (EN/UR/AR/HI) | ✅ Working |
+| TTS: curated natural-only neural voices (male & female) with in-app "Listen" previews, rate/pitch/whisper mode | ✅ Working |
+| Multilingual voices: one natural voice speaks EN/UR/AR/HI; classic voices hand off to a same-gender native voice | ✅ Working |
 | STT: push-to-talk (hold mic / Ctrl+Space) and Live mode | ✅ Working where the OS speech engine is available; falls back to text-only with one clear notice |
 | Copilot mode — floating always-on-top pill bar with mic/live/expand | ✅ Working |
 | Mini mode — floating orb-only window | ✅ Working |
@@ -118,7 +119,7 @@ Then put the project URL and anon key into **Settings → AI Providers → Licen
 - **Renderer:** React 18 + TypeScript + Vite, claymorphism theme in plain CSS
 - **Storage:** Node's built-in `node:sqlite` — no native compilation step
 - **Brain:** Ollama (default `llama3.1:8b-instruct-q4_K_M`, weak-hardware options `qwen2.5:3b` / `phi3:mini`), then Gemini → OpenRouter → Hugging Face → Puter, all free
-- **Voice:** Edge-TTS out (free, multilingual), platform speech engine in
+- **Voice:** Edge-TTS out (free), platform speech engine in. Voice policy: only the most natural neural voices ship — four male (Andrew, Brian, Ryan, Guy) and four female (Ava, Emma, Ada, Jenny), curated in `shared/voices.ts`. The multilingual ones keep the same voice across English, Urdu, Arabic, and Hindi; the classic ones hand off to a natural native voice of the same gender. Default: Andrew.
 - **Weather:** Open-Meteo (no key)
 
 ## Privacy rules baked in

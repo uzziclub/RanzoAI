@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { ranzo, isDesktop } from "../bridge";
 import type { EngineStatus, SystemInfo } from "../../shared/types";
+import { DEFAULT_VOICE } from "../../shared/voices";
+import { VoicePicker } from "../components/VoicePicker";
 import logo from "../../resources/icon-256.png";
 
 const STEPS = ["Welcome", "Your machine", "Local brain", "Voice & language", "Ready"] as const;
@@ -10,7 +12,7 @@ export function SetupWizard({ onDone }: { onDone: () => void }) {
   const [sys, setSys] = useState<SystemInfo | null>(null);
   const [engine, setEngine] = useState<EngineStatus | null>(null);
   const [starting, setStarting] = useState(false);
-  const [ttsVoice, setTtsVoice] = useState("en-US-GuyNeural");
+  const [ttsVoice, setTtsVoice] = useState(DEFAULT_VOICE);
   const [language, setLanguage] = useState<"auto" | "en" | "ur" | "ar" | "hi">("auto");
 
   useEffect(() => {
@@ -100,18 +102,8 @@ export function SetupWizard({ onDone }: { onDone: () => void }) {
           )}
 
           {step === 3 && (
-            <div className="stack">
-              <div>
-                <label className="field-label">Voice</label>
-                <select className="clay-input" value={ttsVoice} onChange={(e) => setTtsVoice(e.target.value)}>
-                  <option value="en-US-GuyNeural">Guy — natural male (English)</option>
-                  <option value="en-US-JennyNeural">Jenny — natural female (English)</option>
-                  <option value="en-GB-RyanNeural">Ryan — British male</option>
-                  <option value="ur-PK-AsadNeural">Asad — Urdu</option>
-                  <option value="ar-SA-HamedNeural">Hamed — Arabic</option>
-                  <option value="hi-IN-MadhurNeural">Madhur — Hindi</option>
-                </select>
-              </div>
+            <div className="stack" style={{ maxHeight: 300, overflowY: "auto", paddingRight: 6 }}>
+              <VoicePicker value={ttsVoice} onChange={setTtsVoice} />
               <div>
                 <label className="field-label">Language</label>
                 <select className="clay-input" value={language} onChange={(e) => setLanguage(e.target.value as typeof language)}>

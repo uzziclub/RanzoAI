@@ -131,6 +131,7 @@ function makePreviewShim(): RanzoBridge {
     rebuildKnowledge: async (): Promise<KnowledgeStatus> => ({ folders: [], chunks: 0, indexedAt: 0 }),
     quickCapture: async () => undefined,
     speak: async () => ({ ok: false, error: "Speech synthesis runs in the installed Windows app." }),
+    previewVoice: async () => ({ ok: false, error: "Voice previews play in the installed Windows app." }),
     stopSpeaking: async () => undefined,
     setCopilotMode: async () => undefined,
     setMiniMode: async () => undefined,

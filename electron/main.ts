@@ -13,7 +13,8 @@ import { addMessage, createChat, listChats, getMessages, deleteChat, clearAllCha
 import { confirmPending, actionHistory, undoLast } from "./services/systemControl";
 import { memoryApi } from "./services/memory";
 import { systemInfo, weather } from "./services/systemInfo";
-import { synthesize, stopSynthesis } from "./services/voice";
+import { synthesize, synthesizeSample, stopSynthesis } from "./services/voice";
+import { SAMPLE_LINES } from "../shared/voices";
 import { bindBroadcast, notificationApi, notify } from "./services/notifications";
 import { startCopilot } from "./services/copilot";
 import {
@@ -311,6 +312,10 @@ function registerIpc() {
     const out = await synthesize(text);
     broadcast("agent-state", "idle");
     return out;
+  });
+  ipcMain.handle("voice:preview", async (_e, voiceId: string) => {
+    const lang = getSettings().language === "auto" ? "en" : getSettings().language;
+    return synthesizeSample(voiceId, lang, SAMPLE_LINES[lang] ?? SAMPLE_LINES.en);
   });
   ipcMain.handle("voice:stop", () => { stopSynthesis(); broadcast("agent-state", "idle"); });
 
