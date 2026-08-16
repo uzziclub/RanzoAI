@@ -1,28 +1,24 @@
-// Functional test: bundles router + db together with an electron stub, then
-// exercises classification, meta commands, and the memory/db layer.
+// Functional test for the auth/licensing layer against a temp database.
 import { build } from "esbuild";
 import { writeFileSync, mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 
-// Windows-safe: import paths inside generated source must use forward slashes,
-// otherwise backslashes in e.g. D:\a\RanzoAI are treated as escapes by esbuild.
+// Windows-safe: forward slashes in generated import paths (see test-router.mjs).
 const cwd = process.cwd().replace(/\\/g, "/");
 
 const stub = join(tmpdir(), "electron-stub.cjs");
 writeFileSync(stub, "module.exports={Notification:class{static isSupported(){return false}show(){}},app:{},dialog:{}};");
 
-const entry = join(tmpdir(), "router-entry.ts");
+const entry = join(tmpdir(), "auth-entry.ts");
 writeFileSync(entry, `
-export { classify } from "${cwd}/electron/services/router";
-export { initDb, addMemoryRow, listMemoriesRows, pushClipboard, clipboardHistory, addNotificationRow, listNotificationRows, cacheSet, cacheGet } from "${cwd}/electron/services/db";
-export { searchMemories, maybeAutoRemember, forgetMatching } from "${cwd}/electron/services/memory";
-export { getSettings, saveSettings } from "${cwd}/electron/services/settings";
+export * as auth from "${cwd}/electron/services/auth";
+export { initDb } from "${cwd}/electron/services/db";
 export { initLogger } from "${cwd}/electron/services/logger";
 `);
 
-const outfile = join(tmpdir(), "ranzo-test-bundle.cjs");
+const outfile = join(tmpdir(), "ranzo-auth-bundle.cjs");
 await build({
   entryPoints: [entry], bundle: true, platform: "node", format: "cjs",
   outfile, external: ["node:sqlite"],
@@ -30,6 +26,13 @@ await build({
 });
 
 const m = await import(pathToFileURL(outfile).href);
+const dir = mkdtempSync(join(tmpdir(), "ranzo-auth-"));
+m.initLogger(dir); m.initDb(dir);
+const { auth } = m;
+
+let pass = 0, fail = 0;
+const expect = (name, a, w) => { if (a === w) pass++; else { fail++; console.error(`FAIL ${name}: got ${JSON.stringify(a)}, wanted ${JSON.stringify(w)}`); } };
+
 auth.seedAdmin();
 
 // admin login
