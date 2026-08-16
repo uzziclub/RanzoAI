@@ -46,6 +46,17 @@ contextBridge.exposeInMainWorld("ranzo", {
   // voice
   speak: (text: string) => invoke("voice:speak", text),
   stopSpeaking: () => invoke("voice:stop"),
+  // notifications
+  listNotifications: () => invoke("notify:list"),
+  markNotificationsRead: () => invoke("notify:mark-read"),
+  clearNotifications: () => invoke("notify:clear"),
+  // knowledge base
+  knowledgeStatus: () => invoke("knowledge:status"),
+  addKnowledgeFolder: () => invoke("knowledge:add-folder"),
+  removeKnowledgeFolder: (path: string) => invoke("knowledge:remove-folder", path),
+  rebuildKnowledge: () => invoke("knowledge:rebuild"),
+  // quick capture
+  quickCapture: (text: string) => invoke("capture:save", text),
   // windows
   setCopilotMode: (on: boolean) => invoke("window:copilot", on),
   setMiniMode: (on: boolean) => invoke("window:mini", on),

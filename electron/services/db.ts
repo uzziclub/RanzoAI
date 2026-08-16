@@ -86,6 +86,14 @@ export function initDb(userDataDir: string) {
       content TEXT NOT NULL,
       at INTEGER NOT NULL
     );
+    CREATE TABLE IF NOT EXISTS notifications (
+      id TEXT PRIMARY KEY,
+      title TEXT NOT NULL,
+      body TEXT NOT NULL,
+      kind TEXT NOT NULL DEFAULT 'info',
+      read INTEGER NOT NULL DEFAULT 0,
+      at INTEGER NOT NULL
+    );
   `);
 }
 
@@ -321,4 +329,44 @@ export function clipboardHistory(): { content: string; at: number }[] {
 
 export function clearClipboardHistory() {
   db.exec("DELETE FROM clipboard_history");
+}
+
+// ---------- notifications ----------
+export function addNotificationRow(title: string, body: string, kind: string): string {
+  const id = randomUUID();
+  db.prepare("INSERT INTO notifications (id, title, body, kind, read, at) VALUES (?, ?, ?, ?, 0, ?)").run(id, title, body, kind, now());
+  db.prepare("DELETE FROM notifications WHERE id NOT IN (SELECT id FROM notifications ORDER BY at DESC LIMIT 100)").run();
+  return id;
+}
+
+export function listNotificationRows(): { id: string; title: string; body: string; kind: string; read: boolean; at: number }[] {
+  const rows = db.prepare("SELECT * FROM notifications ORDER BY at DESC LIMIT 50").all() as Record<string, unknown>[];
+  return rows.map((r) => ({
+    id: String(r.id), title: String(r.title), body: String(r.body),
+    kind: String(r.kind), read: Boolean(r.read), at: Number(r.at),
+  }));
+}
+
+export function markNotificationsRead() {
+  db.exec("UPDATE notifications SET read = 1");
+}
+
+export function clearNotificationRows() {
+  db.exec("DELETE FROM notifications");
+}
+
+export function unreadNotificationCount(): number {
+  const r = db.prepare("SELECT COUNT(*) AS c FROM notifications WHERE read = 0").get() as { c?: number };
+  return Number(r?.c ?? 0);
+}
+
+// ---------- activity queries (daily wrap-up / weekly digest) ----------
+export function messagesSince(ts: number): { role: string; content: string; created_at: number }[] {
+  const rows = db.prepare("SELECT role, content, created_at FROM messages WHERE created_at >= ? ORDER BY created_at ASC LIMIT 200").all(ts) as Record<string, unknown>[];
+  return rows.map((r) => ({ role: String(r.role), content: String(r.content), created_at: Number(r.created_at) }));
+}
+
+export function actionsSince(ts: number): { description: string; tier: string; status: string; created_at: number }[] {
+  const rows = db.prepare("SELECT description, tier, status, created_at FROM actions WHERE created_at >= ? ORDER BY created_at ASC LIMIT 100").all(ts) as Record<string, unknown>[];
+  return rows.map((r) => ({ description: String(r.description), tier: String(r.tier), status: String(r.status), created_at: Number(r.created_at) }));
 }

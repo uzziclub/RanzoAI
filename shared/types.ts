@@ -174,6 +174,21 @@ export interface DiagnosticsInfo {
   logTail: string[];
 }
 
+export interface AppNotification {
+  id: string;
+  title: string;
+  body: string;
+  kind: string;
+  read: boolean;
+  at: number;
+}
+
+export interface KnowledgeStatus {
+  folders: string[];
+  chunks: number;
+  indexedAt: number;
+}
+
 // The bridge surface exposed on window.ranzo
 export interface RanzoBridge {
   platform: () => Promise<string>;
@@ -218,6 +233,17 @@ export interface RanzoBridge {
   // voice
   speak(text: string): Promise<{ ok: boolean; audioBase64?: string; error?: string }>;
   stopSpeaking(): Promise<void>;
+  // notifications
+  listNotifications(): Promise<AppNotification[]>;
+  markNotificationsRead(): Promise<void>;
+  clearNotifications(): Promise<void>;
+  // knowledge base
+  knowledgeStatus(): Promise<KnowledgeStatus>;
+  addKnowledgeFolder(): Promise<KnowledgeStatus>;
+  removeKnowledgeFolder(path: string): Promise<KnowledgeStatus>;
+  rebuildKnowledge(): Promise<KnowledgeStatus>;
+  // quick capture
+  quickCapture(text: string): Promise<void>;
   // windows
   setCopilotMode(on: boolean): Promise<void>;
   setMiniMode(on: boolean): Promise<void>;

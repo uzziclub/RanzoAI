@@ -5,6 +5,7 @@
 import type {
   RanzoBridge, AppSettings, AskResponse, ChatMessage, ChatSummary, EngineStatus,
   MemoryItem, SystemInfo, UserAccount, WeatherInfo, ActionLogEntry, DiagnosticsInfo,
+  AppNotification, KnowledgeStatus,
 } from "../shared/types";
 import { DEFAULT_SETTINGS } from "../shared/types";
 
@@ -119,6 +120,16 @@ function makePreviewShim(): RanzoBridge {
       providerLog: [], logTail: ["Browser preview — logs live in the installed app."],
     }),
     exportDiagnostics: async () => ({ ok: false, error: "Works in the installed Windows app." }),
+    listNotifications: async (): Promise<AppNotification[]> => [
+      { id: "n1", title: "Welcome to the preview", body: "In the installed app, morning briefings, health alerts, and wrap-ups land here.", kind: "info", read: false, at: Date.now() },
+    ],
+    markNotificationsRead: async () => undefined,
+    clearNotifications: async () => undefined,
+    knowledgeStatus: async (): Promise<KnowledgeStatus> => ({ folders: [], chunks: 0, indexedAt: 0 }),
+    addKnowledgeFolder: async (): Promise<KnowledgeStatus> => ({ folders: [], chunks: 0, indexedAt: 0 }),
+    removeKnowledgeFolder: async (): Promise<KnowledgeStatus> => ({ folders: [], chunks: 0, indexedAt: 0 }),
+    rebuildKnowledge: async (): Promise<KnowledgeStatus> => ({ folders: [], chunks: 0, indexedAt: 0 }),
+    quickCapture: async () => undefined,
     speak: async () => ({ ok: false, error: "Speech synthesis runs in the installed Windows app." }),
     stopSpeaking: async () => undefined,
     setCopilotMode: async () => undefined,

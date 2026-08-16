@@ -9,6 +9,8 @@ import { searchMemories, maybeAutoRemember, forgetMatching } from "./memory";
 import { getSettings, saveSettings } from "./settings";
 import { translateError } from "./errorTranslator";
 import { clipboardHistory } from "./db";
+import { searchKnowledge, knowledgeStatus } from "./knowledge";
+import { startFocusSession, endFocusSession, newsNow } from "./copilot";
 import { log } from "./logger";
 
 // ---------- classification ----------
@@ -44,6 +46,8 @@ export function classify(text: string): RouteDecision {
   if (/\bforget (?:this|that|about)\b/i.test(text)) return { target: "memory-command", reason: "User asked to forget something." };
   if (/\bundo (?:that|the last|last action)\b/i.test(text)) return { target: "memory-command", reason: "Undo command." };
   if (/\bwhat did i copy\b/i.test(text)) return { target: "memory-command", reason: "Clipboard recall." };
+  if (/\bfocus session\b|\bstart (?:a )?focus\b|\bend focus\b|\bstop focus\b/i.test(text)) return { target: "memory-command", reason: "Focus session control." };
+  if (/\b(?:the )?news\b|\bmorning briefing\b|\bdaily briefing\b/i.test(text)) return { target: "memory-command", reason: "News briefing on demand." };
   if (/\b(focus|professional|witty|natural|normal) mode\b/i.test(text)) return { target: "memory-command", reason: "Persona switch." };
   if (matchAction(text)) return { target: "action", reason: "Matches a system control pattern." };
   if (!getSettings().forceOffline && (SEARCH_VERB.test(text) || LIVE_DATA.test(text))) {
@@ -113,6 +117,20 @@ async function handleMetaCommand(text: string): Promise<Omit<AskResponse, "messa
     const items = hist.slice(0, 5).map((h, i) => `${i + 1}. ${h.content.slice(0, 80)}`).join("\n");
     return { content: `Here's your recent clipboard history:\n${items}`, provider: "clipboard", latencyMs: 0, confidence: "local" };
   }
+  const focusStart = text.match(/\b(?:start (?:a )?focus(?: session)?|focus session)(?:\s+for)?\s+(\d{1,3})\s*(?:min|minutes|m)?\b/i);
+  if (focusStart) {
+    return { content: startFocusSession(Number(focusStart[1])), provider: "copilot", latencyMs: 0, confidence: "local" };
+  }
+  if (/\bstart (?:a )?focus\b|\bfocus session\b/i.test(text) && !/\bend|stop\b/i.test(text)) {
+    return { content: startFocusSession(25), provider: "copilot", latencyMs: 0, confidence: "local" };
+  }
+  if (/\bend focus\b|\bstop focus\b/i.test(text)) {
+    return { content: endFocusSession(), provider: "copilot", latencyMs: 0, confidence: "local" };
+  }
+  if (/\b(?:the )?news\b|\bmorning briefing\b|\bdaily briefing\b/i.test(text)) {
+    const summary = await newsNow();
+    return { content: summary, provider: "news", latencyMs: 0, confidence: "search" };
+  }
   const personaMatch = text.match(/\b(focus|professional|witty|natural|normal) mode\b/i);
   if (personaMatch) {
     const word = personaMatch[1].toLowerCase();
@@ -165,12 +183,28 @@ async function handleLocal(text: string, history: LlmMessage[]): Promise<Omit<As
   const memoryBlock = memories.length
     ? `\n\nThings you remember about this user (use them naturally, don't recite them):\n${memories.map((m) => `- ${m.content}`).join("\n")}`
     : "";
+  // Offline RAG: if the user has pointed Ranzo at folders, pull matching
+  // chunks from their own documents into context — fully local.
+  let docBlock = "";
+  let usedDocs = false;
+  if (knowledgeStatus().chunks > 0) {
+    const hits = searchKnowledge(text, 3);
+    if (hits.length > 0) {
+      usedDocs = true;
+      docBlock = `\n\nRelevant excerpts from the user's own documents (cite the file name when you use one):\n${hits.map((h) => `[${h.file}]\n${h.text}`).join("\n---\n")}`;
+    }
+  }
   const msgs: LlmMessage[] = [
-    { role: "system", content: personaInstruction() + memoryBlock },
+    { role: "system", content: personaInstruction() + memoryBlock + docBlock },
     ...history.slice(-10),
     { role: "user", content: text },
   ];
-  const result = await askLlm(msgs);
+  const result = await askLlm(msgs, usedDocs ? { skipCache: true } : undefined);
   maybeAutoRemember(text, text);
-  return { content: result.content, provider: result.provider, latencyMs: result.latencyMs, confidence: result.confidence };
+  return {
+    content: result.content,
+    provider: usedDocs ? `${result.provider} + your documents` : result.provider,
+    latencyMs: result.latencyMs,
+    confidence: result.confidence,
+  };
 }

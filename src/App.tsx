@@ -6,6 +6,7 @@ import { SetupWizard } from "./screens/SetupWizard";
 import { MainShell } from "./screens/MainShell";
 import { CopilotBar } from "./screens/CopilotBar";
 import { MiniOrb } from "./screens/MiniOrb";
+import { QuickCapture } from "./screens/QuickCapture";
 
 type Phase = "loading" | "auth" | "setup" | "main";
 
@@ -30,6 +31,7 @@ export function App() {
 
   if (route === "/copilot-bar") return <CopilotBar />;
   if (route === "/mini-orb") return <MiniOrb />;
+  if (route === "/quick-capture") return <QuickCapture />;
 
   if (phase === "loading") {
     return (

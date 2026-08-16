@@ -9,9 +9,10 @@ import { SettingsModal } from "./SettingsModal";
 import { MemoryViewer } from "./MemoryViewer";
 import { AdminPanel } from "./AdminPanel";
 import { CommandPalette } from "../components/CommandPalette";
+import { NotificationPanel } from "../components/NotificationPanel";
 import logo from "../../resources/icon-256.png";
 
-type Modal = "none" | "settings" | "memory" | "admin";
+type Modal = "none" | "settings" | "memory" | "admin" | "notifications";
 
 export function MainShell({ user, onLogout }: { user: UserAccount; onLogout: () => void }) {
   const [agentState, setAgentState] = useState<AgentState>("idle");
@@ -30,6 +31,7 @@ export function MainShell({ user, onLogout }: { user: UserAccount; onLogout: () 
   const [micOn, setMicOn] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [speakReplies, setSpeakReplies] = useState(true);
+  const [unread, setUnread] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
   const micNoticeShown = useRef(false);
 
@@ -49,9 +51,11 @@ export function MainShell({ user, onLogout }: { user: UserAccount; onLogout: () 
     void ranzo.getSettings().then((s) => setSpeakReplies(s.speakReplies));
     const clockTimer = setInterval(() => setClock(new Date()), 10_000);
     const sysTimer = setInterval(() => { void ranzo.systemInfo().then(setSys); }, 60_000);
+    void ranzo.listNotifications().then((ns) => setUnread(ns.filter((n) => !n.read).length));
     const offEngine = ranzo.on("engine-status", (s) => setEngine(s as EngineStatus));
     const offState = ranzo.on("agent-state", (s) => setAgentState(s as AgentState));
-    return () => { clearInterval(clockTimer); clearInterval(sysTimer); offEngine(); offState(); };
+    const offNotify = ranzo.on("notification", () => setUnread((u) => u + 1));
+    return () => { clearInterval(clockTimer); clearInterval(sysTimer); offEngine(); offState(); offNotify(); };
   }, [refreshChats]);
 
   useEffect(() => {
@@ -210,6 +214,9 @@ export function MainShell({ user, onLogout }: { user: UserAccount; onLogout: () 
           {user.role === "admin" && (
             <button className="clay-btn subtle" onClick={() => setModal("admin")}>Manage users</button>
           )}
+          <button className="clay-btn subtle" onClick={() => { setModal("notifications"); setUnread(0); }}>
+            Notifications{unread > 0 ? ` (${unread})` : ""}
+          </button>
           <button className="clay-btn subtle" onClick={() => setModal("memory")}>Memory Viewer</button>
           <div className="spread">
             <div>
@@ -377,6 +384,7 @@ export function MainShell({ user, onLogout }: { user: UserAccount; onLogout: () 
       {modal === "settings" && <SettingsModal onClose={() => setModal("none")} onSpeakRepliesChange={setSpeakReplies} />}
       {modal === "memory" && <MemoryViewer onClose={() => setModal("none")} />}
       {modal === "admin" && user.role === "admin" && <AdminPanel onClose={() => setModal("none")} />}
+      {modal === "notifications" && <NotificationPanel onClose={() => setModal("none")} />}
       {paletteOpen && (
         <CommandPalette
           onClose={() => setPaletteOpen(false)}

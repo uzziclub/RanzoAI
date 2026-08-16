@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { ranzo } from "../bridge";
-import type { AppSettings, DiagnosticsInfo } from "../../shared/types";
+import type { AppSettings, DiagnosticsInfo, KnowledgeStatus } from "../../shared/types";
 
 const TABS = ["Voice", "Language", "AI Providers", "Memory", "Permissions", "Performance", "Privacy", "Notifications", "Shortcuts", "Advanced & Diagnostics"] as const;
 type Tab = (typeof TABS)[number];
@@ -9,9 +9,13 @@ export function SettingsModal({ onClose, onSpeakRepliesChange }: { onClose: () =
   const [tab, setTab] = useState<Tab>("Voice");
   const [s, setS] = useState<AppSettings | null>(null);
   const [diag, setDiag] = useState<DiagnosticsInfo | null>(null);
+  const [know, setKnow] = useState<KnowledgeStatus | null>(null);
   const [saveNote, setSaveNote] = useState("");
 
-  useEffect(() => { void ranzo.getSettings().then(setS); }, []);
+  useEffect(() => {
+    void ranzo.getSettings().then(setS);
+    void ranzo.knowledgeStatus().then(setKnow);
+  }, []);
   useEffect(() => {
     if (tab === "Advanced & Diagnostics") void ranzo.diagnostics().then(setDiag);
   }, [tab]);
@@ -153,6 +157,28 @@ export function SettingsModal({ onClose, onSpeakRepliesChange }: { onClose: () =
               <button className="clay-btn" onClick={() => void ranzo.importMemories()}>Import…</button>
             </div>
             <p className="small muted">Everything Ranzo remembers is visible in the Memory Viewer. Passwords and keys are never stored, by rule.</p>
+            <hr style={{ border: "none", borderTop: "1px solid var(--blue-ghost)" }} />
+            <div>
+              <label className="field-label">Your documents — local knowledge base (offline Q&A)</label>
+              <p className="small muted" style={{ marginBottom: 8 }}>Point Ranzo at folders and it can answer questions about your own files. Indexing is fully local — nothing is uploaded, ever.</p>
+              {know && know.folders.length > 0 && (
+                <div className="stack" style={{ gap: 6, marginBottom: 8 }}>
+                  {know.folders.map((f) => (
+                    <div key={f} className="spread clay-card" style={{ padding: "6px 12px", boxShadow: "var(--clay-sm)" }}>
+                      <span className="small" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f}</span>
+                      <button className="clay-btn subtle" style={{ padding: "2px 8px", fontSize: 11 }} onClick={() => void ranzo.removeKnowledgeFolder(f).then(setKnow)}>Remove</button>
+                    </div>
+                  ))}
+                  <p className="small muted">{know.chunks} chunks indexed{know.indexedAt ? ` · last refreshed ${new Date(know.indexedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}` : ""} · auto-refreshes as files change</p>
+                </div>
+              )}
+              <div className="row">
+                <button className="clay-btn" onClick={() => void ranzo.addKnowledgeFolder().then(setKnow)}>Add folder…</button>
+                {know && know.folders.length > 0 && (
+                  <button className="clay-btn subtle" onClick={() => void ranzo.rebuildKnowledge().then(setKnow)}>Re-index now</button>
+                )}
+              </div>
+            </div>
           </div>
         )}
 

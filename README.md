@@ -42,16 +42,24 @@ Everything listed as **working** actually works — nothing is a mockup. Anythin
 | Error translator — plain sentences, full technical log kept separately | ✅ Working |
 | Diagnostics bundle export (local file, nothing uploaded) | ✅ Working |
 | Idle model release (frees RAM after configurable idle time) | ✅ Working |
+| Background copilot: morning news briefing (free RSS + LLM summary, once a day, at your hour) | ✅ Working |
+| Health watch: low disk / low battery — one clear alert per issue per day | ✅ Working |
+| Daily wrap-up (evening) and weekly digest (Mondays) | ✅ Working |
+| Focus sessions (“start a focus session for 25 minutes”) — mutes non-urgent notifications, announces when done | ✅ Working |
+| NotificationBroker — one in-app queue, no scattered Windows popups; native toast only for briefing/health | ✅ Working |
+| Battery awareness — copilot skips background work on battery | ✅ Working |
+| Quick Capture — global hotkey Ctrl+Shift+Space, tiny always-on-top box, filed into memory with timestamp | ✅ Working |
+| Offline RAG — point Ranzo at folders, ask questions about your own files; auto-reindexes as files change | ✅ Working (Settings → Memory → Your documents) |
 | Windows NSIS installer packaging + uninstaller | ✅ Configured (built by CI on Windows — see Packaging) |
 
 ### Not yet built (planned, honestly not in this build)
 
 - **Wake word “Ranzo” via Porcupine** — needs a free Picovoice key and the custom keyword file; the Settings field and sensitivity slider exist, the engine hookup is next.
 - **Offline STT via faster-whisper** — current STT uses the platform speech engine; the whisper sidecar is the planned replacement so voice input works fully offline.
-- **Background copilot jobs** (morning news briefing, downloads triage, weekly digest, focus timer) — the notification settings exist; the scheduler is next.
+- **Downloads-folder triage and automation recipes** — not started.
 - **Vision / screen understanding, OCR** — not started.
 - **Browser automation (Playwright), UI Automation for native apps, macro recording** — not started.
-- **Offline RAG over user folders, snapshot restore points, automation recipes, quick capture hotkey, voice profiles, dark mode** — not started.
+- **Snapshot restore points, per-user voice profiles, dark mode** — not started.
 
 ## Requirements
 

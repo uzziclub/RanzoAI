@@ -1,5 +1,5 @@
 import {
-  app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, clipboard, dialog, shell, screen,
+  app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, clipboard, dialog, shell, screen, globalShortcut,
 } from "electron";
 import { join } from "node:path";
 import { writeFileSync, readFileSync } from "node:fs";
@@ -14,6 +14,11 @@ import { confirmPending, actionHistory, undoLast } from "./services/systemContro
 import { memoryApi } from "./services/memory";
 import { systemInfo, weather } from "./services/systemInfo";
 import { synthesize, stopSynthesis } from "./services/voice";
+import { bindBroadcast, notificationApi, notify } from "./services/notifications";
+import { startCopilot } from "./services/copilot";
+import {
+  knowledgeStatus, getKnowledgeFolders, setKnowledgeFolders, rebuildIndex, maybeRefresh,
+} from "./services/knowledge";
 import type { AppSettings, MemoryItem } from "../shared/types";
 
 let mainWindow: BrowserWindow | null = null;
@@ -117,6 +122,35 @@ function createMiniOrb() {
   miniOrb.on("closed", () => { miniOrb = null; });
 }
 
+let captureWin: BrowserWindow | null = null;
+
+function toggleQuickCapture() {
+  if (captureWin) { captureWin.close(); return; }
+  const { width } = screen.getPrimaryDisplay().workAreaSize;
+  captureWin = new BrowserWindow({
+    width: 440,
+    height: 120,
+    x: Math.round((width - 440) / 2),
+    y: 120,
+    frame: false,
+    transparent: true,
+    resizable: false,
+    alwaysOnTop: true,
+    skipTaskbar: true,
+    show: false,
+    webPreferences: {
+      preload: join(__dirname, "preload.js"),
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: false,
+    },
+  });
+  loadRoute(captureWin, "/quick-capture");
+  captureWin.once("ready-to-show", () => captureWin?.show());
+  captureWin.on("blur", () => captureWin?.close());
+  captureWin.on("closed", () => { captureWin = null; });
+}
+
 function createTray() {
   const img = nativeImage.createFromPath(ICON_PATH).resize({ width: 16, height: 16 });
   tray = new Tray(img);
@@ -124,6 +158,7 @@ function createTray() {
   tray.setContextMenu(Menu.buildFromTemplate([
     { label: "Open Ranzo", click: () => { mainWindow?.show(); mainWindow?.focus(); } },
     { label: "Copilot bar", click: () => createCopilotBar() },
+    { label: "Quick capture", click: () => toggleQuickCapture() },
     { type: "separator" },
     { label: "Quit Ranzo", click: () => { quitting = true; app.quit(); } },
   ]));
@@ -271,6 +306,36 @@ function registerIpc() {
   });
   ipcMain.handle("voice:stop", () => { stopSynthesis(); broadcast("agent-state", "idle"); });
 
+  // notifications
+  ipcMain.handle("notify:list", () => notificationApi.list());
+  ipcMain.handle("notify:mark-read", () => notificationApi.markRead());
+  ipcMain.handle("notify:clear", () => notificationApi.clear());
+
+  // knowledge base
+  ipcMain.handle("knowledge:status", () => knowledgeStatus());
+  ipcMain.handle("knowledge:add-folder", async () => {
+    const res = await dialog.showOpenDialog({ properties: ["openDirectory"] });
+    if (!res.canceled && res.filePaths.length > 0) {
+      const folders = getKnowledgeFolders();
+      if (!folders.includes(res.filePaths[0])) setKnowledgeFolders([...folders, res.filePaths[0]]);
+    }
+    return knowledgeStatus();
+  });
+  ipcMain.handle("knowledge:remove-folder", (_e, path: string) => {
+    setKnowledgeFolders(getKnowledgeFolders().filter((f) => f !== path));
+    return knowledgeStatus();
+  });
+  ipcMain.handle("knowledge:rebuild", async () => { await rebuildIndex(); return knowledgeStatus(); });
+
+  // quick capture
+  ipcMain.handle("capture:save", (_e, text: string) => {
+    if (text.trim()) {
+      addMemoryRow(text.trim(), "notes", `Quick capture, ${new Date().toLocaleString()}`);
+      notify("Captured", text.trim().slice(0, 80), "info", { native: false });
+    }
+    captureWin?.close();
+  });
+
   // windows
   ipcMain.handle("window:copilot", (_e, on: boolean) => {
     if (on) { createCopilotBar(); mainWindow?.hide(); } else { copilotBar?.close(); mainWindow?.show(); }
@@ -320,11 +385,22 @@ if (!gotLock) {
     createMainWindow();
     createTray();
     watchClipboard();
+    bindBroadcast(broadcast);
+    startCopilot();
+    void rebuildIndex();
+    setInterval(() => maybeRefresh(), 5 * 60_000);
+
+    // Global hotkey: quick capture (default Ctrl+Shift+Space).
+    try {
+      globalShortcut.register("CommandOrControl+Shift+Space", () => toggleQuickCapture());
+    } catch { log("warn", "app", "Quick-capture hotkey could not be registered (another app may own it)."); }
 
     engine.onEngineStatus((s) => broadcast("engine-status", s));
     // Self-check on launch: engine state is probed before the user asks anything.
     void engine.startEngine();
   });
+
+  app.on("will-quit", () => globalShortcut.unregisterAll());
 
   app.on("before-quit", () => { quitting = true; });
   app.on("window-all-closed", () => { /* stay alive in tray */ });
