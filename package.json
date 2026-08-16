@@ -1,7 +1,7 @@
 {
   "name": "ranzo-ai",
   "version": "1.0.0",
-  "description": "Ranzo AI — free, offline-first, local-first Windows desktop assistant by Uzzi Club",
+  "description": "Ranzo AI \u2014 free, offline-first, local-first Windows desktop assistant by Uzzi Club",
   "main": "dist-electron/main.js",
   "scripts": {
     "dev": "vite",
@@ -11,7 +11,7 @@
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "start": "npm run build && electron .",
     "dist:win": "npm run build && electron-builder --win nsis",
-    "test": "node scripts/test-router.mjs && node scripts/test-auth.mjs && node scripts/test-voices.mjs"
+    "test": "node scripts/test-router.mjs && node scripts/test-auth.mjs && node scripts/test-voices.mjs && node scripts/test-baked.mjs"
   },
   "repository": {
     "type": "git",
@@ -41,7 +41,7 @@
   "build": {
     "appId": "club.uzzi.ranzoai",
     "productName": "Ranzo AI",
-    "copyright": "Copyright © 2026 Uzzi Club",
+    "copyright": "Copyright \u00a9 2026 Uzzi Club",
     "directories": {
       "output": "release"
     },
@@ -68,7 +68,7 @@
       ],
       "icon": "resources/icon.ico",
       "publisherName": "Uzzi Club",
-      "legalTrademarks": "Ranzo AI — Uzzi Club"
+      "legalTrademarks": "Ranzo AI \u2014 Uzzi Club"
     },
     "nsis": {
       "oneClick": false,
@@ -80,6 +80,14 @@
       "artifactName": "Ranzo-AI-Setup-${version}.exe",
       "license": "LICENSE.txt",
       "deleteAppDataOnUninstall": false
-    }
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "uzziclub",
+        "repo": "RanzoAI",
+        "releaseType": "release"
+      }
+    ]
   }
 }

@@ -172,6 +172,8 @@ export interface DiagnosticsInfo {
   system: SystemInfo;
   providerLog: { provider: string; latencyMs: number; at: number; ok: boolean }[];
   logTail: string[];
+  /** Names — never values — of secrets baked into this build at compile time. */
+  bakedKeys: string[];
 }
 
 export interface AppNotification {

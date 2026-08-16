@@ -6,6 +6,7 @@ import { writeFileSync, readFileSync } from "node:fs";
 import { initLogger, log, logTail, getLogDir } from "./services/logger";
 import { initDb, pushClipboard, providerLog, listMemoriesRows, addMemoryRow } from "./services/db";
 import { getSettings, saveSettings, isSetupComplete, markSetupComplete } from "./services/settings";
+import { bakedKeyNames } from "./services/baked";
 import * as auth from "./services/auth";
 import * as engine from "./services/engine";
 import { handleAsk } from "./services/router";
@@ -280,6 +281,7 @@ function registerIpc() {
     system: await systemInfo(),
     providerLog: providerLog(),
     logTail: logTail(100),
+    bakedKeys: bakedKeyNames(),
   }));
   ipcMain.handle("system:export-diagnostics", async () => {
     const res = await dialog.showSaveDialog({ defaultPath: "ranzo-diagnostics.txt", filters: [{ name: "Text", extensions: ["txt"] }] });
@@ -295,6 +297,9 @@ function registerIpc() {
       "",
       "-- Engine --",
       JSON.stringify(engine.currentEngineStatus(), null, 2),
+      "",
+      "-- Build-time configuration (names only, never values) --",
+      JSON.stringify({ bakedKeys: bakedKeyNames() }, null, 2),
       "",
       "-- Provider log (latest 50) --",
       JSON.stringify(providerLog(), null, 2),
