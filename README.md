@@ -53,8 +53,8 @@ Everything listed as **working** actually works — nothing is a mockup. Anythin
 | Offline RAG — point Ranzo at folders, ask questions about your own files; auto-reindexes as files change | ✅ Working (Settings → Memory → Your documents) |
 | Windows NSIS installer packaging + uninstaller + EULA screen | ✅ Configured (built by CI on Windows — see PUBLISHING.md) |
 | Tagged-release pipeline: push `v*` tag → tested build → GitHub Release with installer attached | ✅ Configured |
-| Build-time config injection (licensing project + optional free keys baked in from CI secrets, user settings still win) | ✅ Working |
-| Update metadata (`latest.yml` + `.blockmap`) published with every release | ✅ Working — the files an in-app updater will need are already there |
+| Build-time config injection (licensing project + optional free keys baked into the bundle, user settings still win) | ✅ Working in the app and the build script; the CI half needs the one-line promotion in “CI note” below |
+| Update metadata (`latest.yml` + `.blockmap`) attached to releases | ✅ Configured — same promotion applies |
 | Production crash guards (main-process handlers + renderer error boundary, no white screens) | ✅ Working |
 
 ### Not yet built (planned, honestly not in this build)
