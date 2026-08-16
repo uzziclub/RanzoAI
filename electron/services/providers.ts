@@ -5,6 +5,7 @@
 
 import { createHash } from "node:crypto";
 import { getSettings } from "./settings";
+import { bakedSecret } from "./baked";
 import { logProvider, cacheGet, cacheSet } from "./db";
 import { noteModelUse } from "./engine";
 import { log } from "./logger";
@@ -42,7 +43,7 @@ async function askOllama(messages: LlmMessage[]): Promise<string> {
 }
 
 async function askGemini(messages: LlmMessage[]): Promise<string> {
-  const key = getSettings().geminiKey || process.env.RANZO_GEMINI_KEY;
+  const key = getSettings().geminiKey || bakedSecret("RANZO_GEMINI_KEY");
   if (!key) throw new Error("no key");
   const system = messages.filter((m) => m.role === "system").map((m) => m.content).join("\n");
   const contents = messages
@@ -65,7 +66,7 @@ async function askGemini(messages: LlmMessage[]): Promise<string> {
 }
 
 async function askOpenRouter(messages: LlmMessage[]): Promise<string> {
-  const key = getSettings().openrouterKey || process.env.RANZO_OPENROUTER_KEY;
+  const key = getSettings().openrouterKey || bakedSecret("RANZO_OPENROUTER_KEY");
   if (!key) throw new Error("no key");
   const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
     method: "POST",
@@ -81,7 +82,7 @@ async function askOpenRouter(messages: LlmMessage[]): Promise<string> {
 }
 
 async function askHuggingFace(messages: LlmMessage[]): Promise<string> {
-  const key = getSettings().huggingfaceKey || process.env.RANZO_HF_KEY;
+  const key = getSettings().huggingfaceKey || bakedSecret("RANZO_HF_KEY");
   if (!key) throw new Error("no key");
   const res = await fetch("https://router.huggingface.co/v1/chat/completions", {
     method: "POST",
@@ -118,7 +119,7 @@ async function askPuter(messages: LlmMessage[]): Promise<string> {
 }
 
 export async function webSearch(query: string): Promise<{ answer: string; sources: { title: string; url: string }[] } | null> {
-  const key = getSettings().tavilyKey || process.env.RANZO_TAVILY_KEY;
+  const key = getSettings().tavilyKey || bakedSecret("RANZO_TAVILY_KEY");
   if (!key) return null;
   try {
     const res = await fetch("https://api.tavily.com/search", {

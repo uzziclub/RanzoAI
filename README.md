@@ -53,6 +53,8 @@ Everything listed as **working** actually works — nothing is a mockup. Anythin
 | Offline RAG — point Ranzo at folders, ask questions about your own files; auto-reindexes as files change | ✅ Working (Settings → Memory → Your documents) |
 | Windows NSIS installer packaging + uninstaller + EULA screen | ✅ Configured (built by CI on Windows — see PUBLISHING.md) |
 | Tagged-release pipeline: push `v*` tag → tested build → GitHub Release with installer attached | ✅ Configured |
+| Build-time config injection (licensing project + optional free keys baked into the bundle, user settings still win) | ✅ Working in the app and the build script; the CI half needs the one-line promotion in “CI note” below |
+| Update metadata (`latest.yml` + `.blockmap`) attached to releases | ✅ Configured — same promotion applies |
 | Production crash guards (main-process handlers + renderer error boundary, no white screens) | ✅ Working |
 
 ### Not yet built (planned, honestly not in this build)
@@ -63,6 +65,7 @@ Everything listed as **working** actually works — nothing is a mockup. Anythin
 - **Vision / screen understanding, OCR** — not started.
 - **Browser automation (Playwright), UI Automation for native apps, macro recording** — not started.
 - **Snapshot restore points, per-user voice profiles, dark mode** — not started.
+- **In-app auto-update** — releases now ship the `latest.yml` / `.blockmap` metadata an updater reads, but no updater runs inside the app yet: v1 still asks people to download the new installer.
 
 ## Requirements
 
@@ -138,10 +141,26 @@ Then put the project URL and anon key into **Settings → AI Providers → Licen
 
 ## CI note
 
-GitHub blocked this session from pushing files into `.github/workflows/`, so the Windows-installer workflow lives at `ci/build-windows.yml`. To enable automatic installer builds, move it once:
+The Windows-installer workflow runs from `.github/workflows/build-windows.yml`: every push to `main` typechecks, runs all 78 tests, and builds the installer on a real Windows runner; pushing a `v*` tag also publishes a GitHub Release with the installer attached.
+
+GitHub does not allow this repo's build agent to edit files under `.github/workflows/`, so **pipeline changes land in `ci/build-windows.yml` first**. When that file is ahead of the live one — it currently is, with the secret injection and update-metadata steps below — promote it once from a normal checkout:
 
 ```bash
-mkdir -p .github/workflows
-git mv ci/build-windows.yml .github/workflows/build-windows.yml
-git commit -m "Enable Windows installer CI" && git push
+cp ci/build-windows.yml .github/workflows/build-windows.yml
+git commit -am "Update Windows installer CI" && git push
 ```
+
+### Baking configuration into the installer (optional)
+
+Add any of these as **repository secrets** and CI bakes them into the build, so users get a preconfigured app instead of empty Settings fields:
+
+| Secret | What it configures |
+|---|---|
+| `RANZO_SUPABASE_URL` / `RANZO_SUPABASE_ANON_KEY` | central licensing project |
+| `RANZO_GEMINI_KEY` | Gemini cloud fallback |
+| `RANZO_OPENROUTER_KEY` | OpenRouter cloud fallback |
+| `RANZO_HF_KEY` | Hugging Face cloud fallback |
+| `RANZO_TAVILY_KEY` | live web search |
+| `RANZO_PICOVOICE_KEY` | reserved for the wake word |
+
+Every one is optional — an unset secret is simply not baked in and that provider keeps asking in Settings. Values are inlined by esbuild (`electron/services/baked.ts`), never written to a config file beside the .exe and never logged: the build prints only the key names, and Settings → AI Providers shows a baked field as “set at build time — type here to override”. Anything a user types locally always wins.

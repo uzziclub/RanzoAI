@@ -1,3 +1,17 @@
+# Pending copy of .github/workflows/build-windows.yml.
+#
+# GitHub refuses to let this build agent create or update files under
+# .github/workflows/ (it lacks the `workflows` permission), so changes to the
+# CI pipeline land here first. To apply them, copy this file over the live one
+# from a normal checkout:
+#
+#   cp ci/build-windows.yml .github/workflows/build-windows.yml
+#   git commit -am "Update Windows installer CI" && git push
+#
+# Difference from the live workflow: build-time secret injection (the RANZO_*
+# env block) and the update metadata (latest.yml, .blockmap) attached to
+# releases. `npm test` fails if this file and the code drift apart.
+
 name: Build Windows installer
 
 on:
@@ -28,23 +42,48 @@ jobs:
       - name: Run tests
         run: npm test
 
+      # Build-time secret injection. Every one of these is OPTIONAL: a secret
+      # that isn't configured in the repository arrives as an empty string and
+      # is simply not baked in, leaving that provider to be filled in from
+      # Settings after install. Values are never echoed — the build only prints
+      # the NAMES of the keys it baked.
       - name: Build renderer and electron bundles
+        env:
+          RANZO_SUPABASE_URL: ${{ secrets.RANZO_SUPABASE_URL }}
+          RANZO_SUPABASE_ANON_KEY: ${{ secrets.RANZO_SUPABASE_ANON_KEY }}
+          RANZO_GEMINI_KEY: ${{ secrets.RANZO_GEMINI_KEY }}
+          RANZO_OPENROUTER_KEY: ${{ secrets.RANZO_OPENROUTER_KEY }}
+          RANZO_HF_KEY: ${{ secrets.RANZO_HF_KEY }}
+          RANZO_TAVILY_KEY: ${{ secrets.RANZO_TAVILY_KEY }}
+          RANZO_PICOVOICE_KEY: ${{ secrets.RANZO_PICOVOICE_KEY }}
         run: npm run build
 
+      # `--publish never` still writes the update metadata (latest.yml and the
+      # .blockmap) because a publish provider is configured in package.json.
+      # The release step below attaches those files, so a future in-app updater
+      # has something to read; nothing is uploaded from here.
       - name: Package NSIS installer
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npx electron-builder --win nsis --publish never
 
       - name: Upload installer artifact
         uses: actions/upload-artifact@v4
         with:
           name: Ranzo-AI-Windows-Installer
-          path: release/Ranzo-AI-Setup-*.exe
+          path: |
+            release/Ranzo-AI-Setup-*.exe
+            release/Ranzo-AI-Setup-*.exe.blockmap
+            release/latest.yml
           if-no-files-found: error
 
       - name: Create GitHub Release (tags only)
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
-          files: release/Ranzo-AI-Setup-*.exe
+          files: |
+            release/Ranzo-AI-Setup-*.exe
+            release/Ranzo-AI-Setup-*.exe.blockmap
+            release/latest.yml
           generate_release_notes: true
           draft: false

@@ -118,6 +118,7 @@ function makePreviewShim(): RanzoBridge {
       engine: engineStatus,
       system: { platform: "browser", cpuName: "Preview", totalRamGb: 0, battery: null, online: navigator.onLine, hardwareTier: "mid", tierReason: "Preview" },
       providerLog: [], logTail: ["Browser preview — logs live in the installed app."],
+      bakedKeys: [],
     }),
     exportDiagnostics: async () => ({ ok: false, error: "Works in the installed Windows app." }),
     listNotifications: async (): Promise<AppNotification[]> => [

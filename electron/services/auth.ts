@@ -4,7 +4,8 @@
 // How access control works:
 // 1. Accounts are created and verified locally (scrypt-hashed passwords, SQLite).
 // 2. If a Supabase project is configured (Settings > AI Providers > Licensing or
-//    the RANZO_SUPABASE_URL / RANZO_SUPABASE_ANON_KEY env vars), every login and
+//    the RANZO_SUPABASE_URL / RANZO_SUPABASE_ANON_KEY env vars, or values baked
+//    into the build by CI — see services/baked.ts), every login and
 //    every app start checks the central `ranzo_licenses` table. The admin can set
 //    a user's status to active / revoked / blocked from any machine, and the
 //    change takes effect on the user's next online check.
@@ -22,6 +23,7 @@ import {
   getSettingRow, setSettingRow,
 } from "./db";
 import { getSettings } from "./settings";
+import { bakedSecret } from "./baked";
 import { log } from "./logger";
 
 const ADMIN_EMAIL = "mr304e@gmail.com";
@@ -52,8 +54,9 @@ export function seedAdmin() {
 
 function supabaseConfig(): { url: string; key: string } | null {
   const s = getSettings();
-  const url = s.supabaseUrl || process.env.RANZO_SUPABASE_URL || "";
-  const key = s.supabaseAnonKey || process.env.RANZO_SUPABASE_ANON_KEY || "";
+  // Settings win, then a runtime env var, then whatever CI baked into the build.
+  const url = s.supabaseUrl || bakedSecret("RANZO_SUPABASE_URL");
+  const key = s.supabaseAnonKey || bakedSecret("RANZO_SUPABASE_ANON_KEY");
   if (!url || !key) return null;
   return { url, key };
 }

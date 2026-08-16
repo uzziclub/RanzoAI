@@ -2,18 +2,42 @@
 
 The complete path from this repository to a downloadable `Ranzo-AI-Setup-1.0.0.exe` your users can install. Everything here is free.
 
-## One-time setup (5 minutes)
+## One-time setup (1 minute)
 
-1. **Enable the CI workflow** (GitHub blocked the build agent from creating it, so it lives in `ci/`):
+The CI workflow already runs from `.github/workflows/build-windows.yml` — every push builds, typechecks, runs all 78 tests, and produces the installer on a real Windows runner.
 
-   ```bash
-   mkdir -p .github/workflows
-   git mv ci/build-windows.yml .github/workflows/build-windows.yml
-   git commit -m "Enable Windows installer CI"
-   git push
-   ```
+**One pending change to apply.** GitHub blocks this repo's build agent from writing to `.github/workflows/`, so updates to the pipeline are staged in `ci/build-windows.yml`. That copy is currently ahead of the live workflow: it adds the build-time secret injection and attaches the update metadata to releases. Promote it once:
 
-2. That's it. Every push now builds, typechecks, runs all 57 tests, and produces the installer on a real Windows runner.
+```bash
+cp ci/build-windows.yml .github/workflows/build-windows.yml
+git commit -am "Update Windows installer CI"
+git push
+```
+
+Until you do, builds keep working exactly as before — they just won't bake in secrets or publish `latest.yml`.
+
+### Optional: bake your configuration into the installer
+
+Add any of these under **Settings → Secrets and variables → Actions → New repository secret**:
+
+| Secret | Effect |
+|---|---|
+| `RANZO_SUPABASE_URL` | licensing project URL |
+| `RANZO_SUPABASE_ANON_KEY` | licensing project anon key |
+| `RANZO_GEMINI_KEY` | Gemini fallback preconfigured |
+| `RANZO_OPENROUTER_KEY` | OpenRouter fallback preconfigured |
+| `RANZO_HF_KEY` | Hugging Face fallback preconfigured |
+| `RANZO_TAVILY_KEY` | live web search preconfigured |
+| `RANZO_PICOVOICE_KEY` | reserved for the wake word |
+
+Skip any you don't have — an unset secret is not baked in, and that feature keeps working exactly as before (asks in Settings, or stays off). Baked values are inlined into `dist-electron/main.js` at build time; the build log lists only the key *names*, and a user typing their own key in Settings always overrides the baked one.
+
+To bake values into a local build instead:
+
+```bash
+set RANZO_TAVILY_KEY=your-key
+npm run dist:win
+```
 
 ## Releasing a version
 
@@ -30,6 +54,7 @@ git push && git push --tags
 GitHub Actions then automatically:
 - builds `Ranzo-AI-Setup-1.0.0.exe` (NSIS, x64, installer + uninstaller, license screen)
 - creates a **GitHub Release** with the installer attached and auto-generated notes
+- attaches the update metadata — `latest.yml` and `Ranzo-AI-Setup-1.0.0.exe.blockmap` — alongside it (once the CI change above is promoted)
 
 Your public download link will be:
 `https://github.com/uzziclub/RanzoAI/releases/latest`
@@ -44,7 +69,7 @@ npm run dist:win
 
 ## Before you ship — checklist
 
-- [ ] `npm test` — 57/57 green
+- [ ] `npm test` — 78/78 green
 - [ ] `npm run typecheck` — clean
 - [ ] Install the .exe on a clean Windows 10/11 machine
 - [ ] First-run: signup → wizard → Ollama install prompt → chat works
@@ -70,4 +95,5 @@ electron-builder signs automatically when those variables are set. Until then, s
 - NSIS installer with license (EULA) screen, install-dir choice, desktop + start-menu shortcuts, proper uninstaller
 - App ID `club.uzzi.ranzoai`, publisher “Uzzi Club”
 - User data lives in `%APPDATA%/ranzo-ai/` (database, logs, settings) and survives reinstalls; the uninstaller leaves it alone
-- No auto-update in v1 (by design). To ship an update: bump version, tag, publish the new release, tell users to download it.
+- No updater runs inside the app in v1 (by design). To ship an update: bump version, tag, publish the new release, tell users to download it.
+- Releases do carry `latest.yml` + `.blockmap`, generated from the `publish` block in `package.json`. Those are exactly the files an `electron-updater` client reads, so switching auto-update on later is a client-side change only — the release side is already correct, and old installers are unaffected.

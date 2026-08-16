@@ -18,7 +18,7 @@ export function SettingsModal({ onClose, onSpeakRepliesChange }: { onClose: () =
     void ranzo.knowledgeStatus().then(setKnow);
   }, []);
   useEffect(() => {
-    if (tab === "Advanced & Diagnostics") void ranzo.diagnostics().then(setDiag);
+    if (tab === "Advanced & Diagnostics" || tab === "AI Providers") void ranzo.diagnostics().then(setDiag);
   }, [tab]);
 
   async function patch(p: Partial<AppSettings>) {
@@ -30,6 +30,12 @@ export function SettingsModal({ onClose, onSpeakRepliesChange }: { onClose: () =
   }
 
   if (!s) return null;
+
+  // Keys baked into the installer at build time. Only their names are known to
+  // the UI — never the values — so the field can be honest instead of saying
+  // "not set" when the provider actually works.
+  const bakedKeys = diag?.bakedKeys ?? [];
+  const isBaked = (name: string) => bakedKeys.includes(name);
 
   const Toggle = ({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) => (
     <button className={`toggle ${value ? "on" : ""}`} onClick={() => onChange(!value)} aria-pressed={value} />
@@ -113,26 +119,32 @@ export function SettingsModal({ onClose, onSpeakRepliesChange }: { onClose: () =
             </div>
             <p className="small muted">Free cloud fallbacks (all optional — leave blank to skip a provider):</p>
             {([
-              ["geminiKey", "Google AI Studio key (Gemini, free tier)"],
-              ["openrouterKey", "OpenRouter key (free models)"],
-              ["huggingfaceKey", "Hugging Face token"],
-              ["tavilyKey", "Tavily key (live web search)"],
-              ["picovoiceKey", "Picovoice key (wake word)"],
-            ] as const).map(([key, label]) => (
+              ["geminiKey", "Google AI Studio key (Gemini, free tier)", "RANZO_GEMINI_KEY"],
+              ["openrouterKey", "OpenRouter key (free models)", "RANZO_OPENROUTER_KEY"],
+              ["huggingfaceKey", "Hugging Face token", "RANZO_HF_KEY"],
+              ["tavilyKey", "Tavily key (live web search)", "RANZO_TAVILY_KEY"],
+              ["picovoiceKey", "Picovoice key (wake word)", "RANZO_PICOVOICE_KEY"],
+            ] as const).map(([key, label, bakedName]) => (
               <div key={key}>
                 <label className="field-label">{label}</label>
-                <input className="clay-input" type="password" value={s[key]} onChange={(e) => setS({ ...s, [key]: e.target.value })} onBlur={() => void patch({ [key]: s[key] } as Partial<AppSettings>)} placeholder="not set" />
+                <input className="clay-input" type="password" value={s[key]} onChange={(e) => setS({ ...s, [key]: e.target.value })} onBlur={() => void patch({ [key]: s[key] } as Partial<AppSettings>)} placeholder={isBaked(bakedName) ? "set at build time — type here to override" : "not set"} />
               </div>
             ))}
             <p className="small muted">Licensing (for centrally managing user access — optional):</p>
             <div>
               <label className="field-label">Supabase URL</label>
-              <input className="clay-input" value={s.supabaseUrl} onChange={(e) => setS({ ...s, supabaseUrl: e.target.value })} onBlur={() => void patch({ supabaseUrl: s.supabaseUrl })} placeholder="https://xxxx.supabase.co" />
+              <input className="clay-input" value={s.supabaseUrl} onChange={(e) => setS({ ...s, supabaseUrl: e.target.value })} onBlur={() => void patch({ supabaseUrl: s.supabaseUrl })} placeholder={isBaked("RANZO_SUPABASE_URL") ? "set at build time — type here to override" : "https://xxxx.supabase.co"} />
             </div>
             <div>
               <label className="field-label">Supabase anon key</label>
-              <input className="clay-input" type="password" value={s.supabaseAnonKey} onChange={(e) => setS({ ...s, supabaseAnonKey: e.target.value })} onBlur={() => void patch({ supabaseAnonKey: s.supabaseAnonKey })} placeholder="not set" />
+              <input className="clay-input" type="password" value={s.supabaseAnonKey} onChange={(e) => setS({ ...s, supabaseAnonKey: e.target.value })} onBlur={() => void patch({ supabaseAnonKey: s.supabaseAnonKey })} placeholder={isBaked("RANZO_SUPABASE_ANON_KEY") ? "set at build time — type here to override" : "not set"} />
             </div>
+            {bakedKeys.length > 0 && (
+              <p className="small muted">
+                This build already carries {bakedKeys.length === 1 ? "one setting" : `${bakedKeys.length} settings`} from
+                whoever packaged it. Anything you type here is stored locally and takes priority.
+              </p>
+            )}
           </div>
         )}
 
