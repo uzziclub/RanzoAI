@@ -4,31 +4,32 @@ import { build } from "esbuild";
 import { writeFileSync, mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { pathToFileURL } from "node:url";
+
+// Windows-safe: import paths inside generated source must use forward slashes,
+// otherwise backslashes in e.g. D:\a\RanzoAI are treated as escapes by esbuild.
+const cwd = process.cwd().replace(/\\/g, "/");
 
 const stub = join(tmpdir(), "electron-stub.cjs");
 writeFileSync(stub, "module.exports={Notification:class{static isSupported(){return false}show(){}},app:{},dialog:{}};");
 
 const entry = join(tmpdir(), "router-entry.ts");
 writeFileSync(entry, `
-export { classify } from "${process.cwd()}/electron/services/router";
-export { initDb, addMemoryRow, listMemoriesRows, pushClipboard, clipboardHistory, addNotificationRow, listNotificationRows, cacheSet, cacheGet } from "${process.cwd()}/electron/services/db";
-export { searchMemories, maybeAutoRemember, forgetMatching } from "${process.cwd()}/electron/services/memory";
-export { getSettings, saveSettings } from "${process.cwd()}/electron/services/settings";
-export { initLogger } from "${process.cwd()}/electron/services/logger";
+export { classify } from "${cwd}/electron/services/router";
+export { initDb, addMemoryRow, listMemoriesRows, pushClipboard, clipboardHistory, addNotificationRow, listNotificationRows, cacheSet, cacheGet } from "${cwd}/electron/services/db";
+export { searchMemories, maybeAutoRemember, forgetMatching } from "${cwd}/electron/services/memory";
+export { getSettings, saveSettings } from "${cwd}/electron/services/settings";
+export { initLogger } from "${cwd}/electron/services/logger";
 `);
 
+const outfile = join(tmpdir(), "ranzo-test-bundle.cjs");
 await build({
   entryPoints: [entry], bundle: true, platform: "node", format: "cjs",
-  outfile: "/tmp/ranzo-test-bundle.cjs", external: ["node:sqlite"],
+  outfile, external: ["node:sqlite"],
   alias: { electron: stub }, logLevel: "silent",
 });
 
-const m = await import("/tmp/ranzo-test-bundle.cjs");
-const dir = mkdtempSync(join(tmpdir(), "ranzo-test-"));
-m.initLogger(dir);
-m.initDb(dir);
-
-let pass = 0, fail = 0;
+const m = await import(pathToFileURL(outfile).href);let pass = 0, fail = 0;
 function expect(name, actual, wanted) {
   if (actual === wanted) { pass++; }
   else { fail++; console.error(`FAIL ${name}: got "${actual}", wanted "${wanted}"`); }
