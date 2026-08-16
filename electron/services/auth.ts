@@ -63,9 +63,19 @@ interface CentralStatus {
   checkedAt: number;
 }
 
+// Rate-limit live central checks so chat messages never wait on the network:
+// at most one real HTTP check per email per 15 minutes; between checks the
+// cached result is used.
+const CENTRAL_CHECK_INTERVAL = 15 * 60_000;
+const lastCentralCheck = new Map<string, number>();
+
 async function checkCentralStatus(email: string): Promise<CentralStatus | null> {
   const cfg = supabaseConfig();
   if (!cfg) return null;
+  const key = email.toLowerCase();
+  const last = lastCentralCheck.get(key) ?? 0;
+  if (Date.now() - last < CENTRAL_CHECK_INTERVAL) return cachedCentralStatus(key);
+  lastCentralCheck.set(key, Date.now());
   try {
     const res = await fetch(
       `${cfg.url.replace(/\/$/, "")}/rest/v1/ranzo_licenses?email=eq.${encodeURIComponent(email.toLowerCase())}&select=status`,

@@ -55,13 +55,33 @@ function computeTier(): { tier: "low" | "mid" | "high"; reason: string } {
   return result;
 }
 
+// Cache the online probe and battery query so the 60-second copilot heartbeat
+// and sidebar refresh stay cheap: at most one network probe / one PowerShell
+// call per interval, shared by every caller.
+let onlineCache: { value: boolean; at: number } | null = null;
+const ONLINE_TTL = 90_000;
+
 async function isOnline(): Promise<boolean> {
+  if (onlineCache && Date.now() - onlineCache.at < ONLINE_TTL) return onlineCache.value;
+  let value = false;
   try {
     const res = await fetch("https://api.open-meteo.com/v1/forecast?latitude=0&longitude=0&current=temperature_2m", { signal: AbortSignal.timeout(4000) });
-    return res.ok;
+    value = res.ok;
   } catch {
-    return false;
+    value = false;
   }
+  onlineCache = { value, at: Date.now() };
+  return value;
+}
+
+let batteryCache: { value: { percent: number; charging: boolean } | null; at: number } | null = null;
+const BATTERY_TTL = 55_000;
+
+async function batteryCached() {
+  if (batteryCache && Date.now() - batteryCache.at < BATTERY_TTL) return batteryCache.value;
+  const value = await batteryInfo();
+  batteryCache = { value, at: Date.now() };
+  return value;
 }
 
 export async function systemInfo(): Promise<SystemInfo> {
@@ -70,7 +90,7 @@ export async function systemInfo(): Promise<SystemInfo> {
     platform: platform(),
     cpuName: cpus()[0]?.model?.trim() ?? "Unknown CPU",
     totalRamGb: Math.round(totalmem() / 1024 ** 3),
-    battery: await batteryInfo(),
+    battery: await batteryCached(),
     online: await isOnline(),
     hardwareTier: tier,
     tierReason: reason,

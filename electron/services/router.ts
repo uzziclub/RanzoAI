@@ -15,8 +15,12 @@ import { log } from "./logger";
 
 // ---------- classification ----------
 
-const LIVE_DATA = /\b(today|latest|current|right now|news|price of|stock|weather in|score|happening|this week'?s)\b/i;
+// Note: bare "news" is NOT here — real briefing requests match NEWS_CMD below,
+// while sentences that merely mention news ("news about my cousin") stay local.
+const LIVE_DATA = /\b(today|latest|current|right now|price of|stock|weather in|score|happening|this week'?s)\b/i;
 const SEARCH_VERB = /\b(search (the web|online|for)|look up|google)\b/i;
+// A briefing request, not merely a sentence containing the word "news".
+const NEWS_CMD = /\b(?:what'?s?|any|show(?: me)?|give me|read(?: me)?|tell me|get)\s+(?:the\s+|some\s+|today'?s\s+)?news\b|^news$|\bnews (?:briefing|update|summary)\b|\bmorning briefing\b|\bdaily briefing\b/i;
 
 interface ActionMatch { kind: string; args: Record<string, string> }
 
@@ -47,7 +51,7 @@ export function classify(text: string): RouteDecision {
   if (/\bundo (?:that|the last|last action)\b/i.test(text)) return { target: "memory-command", reason: "Undo command." };
   if (/\bwhat did i copy\b/i.test(text)) return { target: "memory-command", reason: "Clipboard recall." };
   if (/\bfocus session\b|\bstart (?:a )?focus\b|\bend focus\b|\bstop focus\b/i.test(text)) return { target: "memory-command", reason: "Focus session control." };
-  if (/\b(?:the )?news\b|\bmorning briefing\b|\bdaily briefing\b/i.test(text)) return { target: "memory-command", reason: "News briefing on demand." };
+  if (NEWS_CMD.test(text.trim())) return { target: "memory-command", reason: "News briefing on demand." };
   if (/\b(focus|professional|witty|natural|normal) mode\b/i.test(text)) return { target: "memory-command", reason: "Persona switch." };
   if (matchAction(text)) return { target: "action", reason: "Matches a system control pattern." };
   if (!getSettings().forceOffline && (SEARCH_VERB.test(text) || LIVE_DATA.test(text))) {
@@ -127,9 +131,10 @@ async function handleMetaCommand(text: string): Promise<Omit<AskResponse, "messa
   if (/\bend focus\b|\bstop focus\b/i.test(text)) {
     return { content: endFocusSession(), provider: "copilot", latencyMs: 0, confidence: "local" };
   }
-  if (/\b(?:the )?news\b|\bmorning briefing\b|\bdaily briefing\b/i.test(text)) {
+  if (NEWS_CMD.test(text.trim())) {
+    const start = Date.now();
     const summary = await newsNow();
-    return { content: summary, provider: "news", latencyMs: 0, confidence: "search" };
+    return { content: summary, provider: "news", latencyMs: Date.now() - start, confidence: "search" };
   }
   const personaMatch = text.match(/\b(focus|professional|witty|natural|normal) mode\b/i);
   if (personaMatch) {

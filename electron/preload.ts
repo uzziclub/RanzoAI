@@ -25,7 +25,7 @@ contextBridge.exposeInMainWorld("ranzo", {
   deleteChat: (chatId: string) => invoke("chat:delete", chatId),
   clearAllChats: () => invoke("chat:clear-all"),
   // actions
-  confirmAction: (actionId: string, approved: boolean) => invoke("action:confirm", actionId, approved),
+  confirmAction: (actionId: string, approved: boolean, chatId?: string | null) => invoke("action:confirm", actionId, approved, chatId ?? null),
   actionLog: () => invoke("action:log"),
   undoLastAction: () => invoke("action:undo-last"),
   // memory

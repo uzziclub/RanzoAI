@@ -51,32 +51,35 @@ export function MainShell({ user, onLogout }: { user: UserAccount; onLogout: () 
     void ranzo.getSettings().then((s) => setSpeakReplies(s.speakReplies));
     const clockTimer = setInterval(() => setClock(new Date()), 10_000);
     const sysTimer = setInterval(() => { void ranzo.systemInfo().then(setSys); }, 60_000);
+    // Weather refreshes every 30 minutes; the row hides itself when offline.
+    const weatherTimer = setInterval(() => { void ranzo.weather().then(setWeather); }, 30 * 60_000);
     void ranzo.listNotifications().then((ns) => setUnread(ns.filter((n) => !n.read).length));
     const offEngine = ranzo.on("engine-status", (s) => setEngine(s as EngineStatus));
     const offState = ranzo.on("agent-state", (s) => setAgentState(s as AgentState));
     const offNotify = ranzo.on("notification", () => setUnread((u) => u + 1));
-    return () => { clearInterval(clockTimer); clearInterval(sysTimer); offEngine(); offState(); offNotify(); };
+    return () => { clearInterval(clockTimer); clearInterval(sysTimer); clearInterval(weatherTimer); offEngine(); offState(); offNotify(); };
   }, [refreshChats]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages]);
 
-  // keyboard: Ctrl+K palette, Ctrl+Space push-to-talk
+  // keyboard: Ctrl+K palette, Ctrl+Space push-to-talk.
+  // Re-registered every render so the handlers never see stale voice state,
+  // and releasing either Ctrl or Space (in any order) stops the mic.
   useEffect(() => {
     function down(e: KeyboardEvent) {
       if (e.ctrlKey && e.key.toLowerCase() === "k") { e.preventDefault(); setPaletteOpen((v) => !v); }
       if (e.ctrlKey && e.code === "Space" && !e.repeat) { e.preventDefault(); handleMicDown(); }
     }
     function up(e: KeyboardEvent) {
-      if (e.ctrlKey && e.code === "Space") { e.preventDefault(); handleMicUp(); }
+      if (e.code === "Space" || e.key === "Control") { handleMicUp(); }
       if (e.key === "Escape") { setPaletteOpen(false); setModal("none"); }
     }
     window.addEventListener("keydown", down);
     window.addEventListener("keyup", up);
     return () => { window.removeEventListener("keydown", down); window.removeEventListener("keyup", up); };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [voice.micAvailable]);
+  });
 
   function showMicUnavailable() {
     if (!micNoticeShown.current) {
@@ -124,6 +127,14 @@ export function MainShell({ user, onLogout }: { user: UserAccount; onLogout: () 
       if (speakReplies && !res.pendingAction && res.content.length < 600) {
         void voice.speak(res.content);
       }
+    } catch {
+      // The bridge itself failed (should be rare — errors are normally
+      // translated into a reply). Say so plainly instead of going silent.
+      setMessages((m) => [...m, {
+        id: `err-${Date.now()}`, chatId: activeChat ?? "", role: "assistant",
+        content: "Something went wrong getting that answer through. Try once more — if it keeps happening, check Settings → Advanced & Diagnostics.",
+        createdAt: Date.now(), provider: "error",
+      }]);
     } finally {
       setBusy(false);
       setAgentState("idle");
@@ -135,13 +146,10 @@ export function MainShell({ user, onLogout }: { user: UserAccount; onLogout: () 
     const p = pending;
     setPending(null);
     setAgentState("working");
-    const res = await ranzo.confirmAction(p.id, approved);
+    const res = await ranzo.confirmAction(p.id, approved, activeChat);
     if (activeChat) {
-      // Show the outcome in the conversation.
-      setMessages((m) => [...m, {
-        id: `act-${Date.now()}`, chatId: activeChat, role: "assistant",
-        content: res.content, createdAt: Date.now(), provider: "actions",
-      }]);
+      // The outcome is persisted server-side; reload so the id is real.
+      setMessages(await ranzo.getMessages(activeChat));
     }
     setAgentState("idle");
     if (speakReplies) void voice.speak(res.content);
@@ -233,9 +241,9 @@ export function MainShell({ user, onLogout }: { user: UserAccount; onLogout: () 
       <div className="col" style={{ alignItems: "stretch" }}>
         <div className="orb-wrap" style={{ paddingTop: 8 }}>
           <div className={`orb ${agentState}`} title={stateLabel[agentState]} />
-          <div className="wave" aria-hidden>
+          <div className={`wave ${agentState === "speaking" || agentState === "listening" ? "active" : ""}`} aria-hidden>
             {[0, 1, 2, 3, 4, 5, 6].map((i) => (
-              <span key={i} style={{ height: agentState === "speaking" || agentState === "listening" ? `${6 + Math.abs(Math.sin((Date.now() / 150) + i)) * voice.outputLevel * 18 + (agentState === "listening" ? 8 : 0)}px` : "4px" }} />
+              <span key={i} style={{ animationDelay: `${i * 0.12}s` }} />
             ))}
           </div>
           <div className="row" style={{ gap: 10 }}>

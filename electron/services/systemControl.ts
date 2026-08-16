@@ -30,9 +30,13 @@ async function ps(script: string): Promise<string> {
   if (!IS_WIN) {
     throw new Error("This system action needs Windows. On this machine I can only simulate it.");
   }
-  const { stdout } = await execAsync(`powershell -NoProfile -NonInteractive -Command "${script.replace(/"/g, '\\"')}"`, {
-    timeout: 30_000, windowsHide: true,
-  });
+  // -EncodedCommand avoids every cmd.exe / PowerShell quoting pitfall:
+  // the script travels as base64 UTF-16LE, untouched by the shell.
+  const encoded = Buffer.from(script, "utf16le").toString("base64");
+  const { stdout } = await execAsync(
+    `powershell -NoProfile -NonInteractive -EncodedCommand ${encoded}`,
+    { timeout: 30_000, windowsHide: true },
+  );
   return stdout.trim();
 }
 

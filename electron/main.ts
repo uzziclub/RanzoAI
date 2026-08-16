@@ -218,17 +218,25 @@ function registerIpc() {
   ipcMain.handle("chat:clear-all", () => clearAllChats());
 
   // actions
-  ipcMain.handle("action:confirm", async (_e, actionId: string, approved: boolean) => {
+  ipcMain.handle("action:confirm", async (_e, actionId: string, approved: boolean, chatId: string | null) => {
     broadcast("agent-state", "working");
+    let content: string;
     try {
       const outcome = await confirmPending(actionId, approved);
-      return { messageId: "", content: outcome.message, provider: "actions", latencyMs: 0, confidence: "local" };
+      content = outcome.message;
     } catch (err) {
       const { translateError } = await import("./services/errorTranslator");
-      return { messageId: "", content: translateError(err), provider: "actions", latencyMs: 0, confidence: "local" };
+      content = translateError(err);
     } finally {
       broadcast("agent-state", "idle");
     }
+    // Persist the outcome in the conversation so it survives reopening the chat.
+    let messageId = "";
+    if (chatId) {
+      const saved = addMessage({ chatId, role: "assistant", content, provider: "actions", confidence: "local" });
+      messageId = saved.id;
+    }
+    return { messageId, content, provider: "actions", latencyMs: 0, confidence: "local" };
   });
   ipcMain.handle("action:log", () => actionHistory());
   ipcMain.handle("action:undo-last", () => undoLast());

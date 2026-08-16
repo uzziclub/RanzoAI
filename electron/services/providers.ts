@@ -25,10 +25,12 @@ function hashQuestion(messages: LlmMessage[]): string {
 
 async function askOllama(messages: LlmMessage[]): Promise<string> {
   const s = getSettings();
+  // keep_alive: -1 keeps the model resident forever; "Nm" releases after N minutes idle.
+  const keepAlive = s.idleModelReleaseMinutes <= 0 ? -1 : `${s.idleModelReleaseMinutes}m`;
   const res = await fetch(`${s.ollamaUrl}/api/chat`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ model: s.ollamaModel, messages, stream: false, keep_alive: `${s.idleModelReleaseMinutes}m` }),
+    body: JSON.stringify({ model: s.ollamaModel, messages, stream: false, keep_alive: keepAlive }),
     signal: AbortSignal.timeout(120_000),
   });
   if (!res.ok) throw new Error(`Ollama HTTP ${res.status}`);
@@ -165,7 +167,9 @@ export async function askLlm(messages: LlmMessage[], opts?: { skipCache?: boolea
       const content = await p.fn(messages);
       const latencyMs = Date.now() - start;
       logProvider(p.name, latencyMs, true);
-      cacheSet(qHash, content, p.name);
+      // Don't cache one-off answers (live search, briefings): they'd go stale
+      // and could later be served as if they were fresh.
+      if (!opts?.skipCache) cacheSet(qHash, content, p.name);
       return { content, provider: p.name, latencyMs, confidence: p.confidence };
     } catch (err) {
       const msg = String(err instanceof Error ? err.message : err);

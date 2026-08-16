@@ -212,7 +212,7 @@ export interface RanzoBridge {
   deleteChat(chatId: string): Promise<void>;
   clearAllChats(): Promise<void>;
   // actions
-  confirmAction(actionId: string, approved: boolean): Promise<AskResponse>;
+  confirmAction(actionId: string, approved: boolean, chatId?: string | null): Promise<AskResponse>;
   actionLog(): Promise<ActionLogEntry[]>;
   undoLastAction(): Promise<{ ok: boolean; message: string }>;
   // memory
